@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Transform 2026 — Connection Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Lato:wght@300;400;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #1c1c1e; --paper: #f5f2ed; --cream: #ede8df; --gold: #b8963e;
+    --gold-light: #f0e6ce; --rust: #c05a2a; --muted: #7a7068; --border: #d8d0c4;
+    --white: #ffffff; --green: #2a7a4a;
+  }
+  body { font-family: 'Lato', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; padding-bottom: 80px; }
+
+  .header { background: var(--ink); padding: 18px 20px 14px; position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; }
+  .header-title { font-family: 'Playfair Display', serif; color: white; font-size: 17px; line-height: 1.2; }
+  .header-title span { color: #e0b86a; }
+  .header-meta { font-size: 11px; color: #6a6070; margin-top: 2px; font-weight: 300; letter-spacing: 0.05em; }
+  .header-right { display: flex; gap: 8px; }
+  .hbtn { font-family: 'Lato', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 7px 13px; border-radius: 6px; border: none; cursor: pointer; transition: all 0.15s; }
+  .hbtn-log { background: var(--gold); color: white; }
+  .hbtn-log:hover { background: #a07830; }
+  .hbtn-list { background: #2e2e3e; color: #aaa; }
+  .hbtn-list:hover { background: #3e3e50; color: white; }
+  .hbtn.active-view { background: var(--rust); color: white; }
+
+  .main { padding: 20px 16px; max-width: 560px; margin: 0 auto; }
+
+  .who-bar { background: var(--ink); border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+  .who-bar-label { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #6a6070; white-space: nowrap; }
+  .who-bar select { flex: 1; background: #2e2e3e; border: 1.5px solid #3e3e52; color: white; font-family: 'Lato', sans-serif; font-size: 14px; padding: 8px 10px; border-radius: 8px; cursor: pointer; -webkit-appearance: none; }
+  .who-bar select:focus { outline: none; border-color: var(--gold); }
+
+  .form-card { background: var(--white); border: 1.5px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+  .form-card-title { font-family: 'Playfair Display', serif; font-size: 18px; margin-bottom: 18px; color: var(--ink); }
+
+  .field { margin-bottom: 15px; }
+  .field label { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .field input, .field select, .field textarea { width: 100%; font-family: 'Lato', sans-serif; font-size: 15px; border: 1.5px solid var(--border); border-radius: 10px; padding: 11px 13px; background: var(--paper); color: var(--ink); transition: border-color 0.15s; -webkit-appearance: none; appearance: none; }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--gold); background: white; }
+  .field textarea { resize: vertical; line-height: 1.6; min-height: 80px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+
+  /* AUTOCOMPLETE */
+  .autocomplete-wrap { position: relative; }
+  .autocomplete-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: white; border: 1.5px solid var(--gold); border-radius: 10px; z-index: 99; max-height: 200px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.12); display: none; }
+  .autocomplete-list.open { display: block; }
+  .autocomplete-item { padding: 10px 13px; cursor: pointer; border-bottom: 1px solid var(--border); }
+  .autocomplete-item:last-child { border-bottom: none; }
+  .autocomplete-item:hover, .autocomplete-item.focused { background: var(--gold-light); }
+  .autocomplete-name { font-weight: 700; font-size: 14px; }
+  .autocomplete-company { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .autocomplete-highlight { color: var(--gold); }
+
+  .chip-row { display: flex; gap: 7px; flex-wrap: wrap; }
+  .chip { padding: 7px 13px; border-radius: 20px; border: 1.5px solid var(--border); background: white; font-size: 12.5px; font-family: 'Lato', sans-serif; cursor: pointer; transition: all 0.12s; color: var(--muted); }
+  .chip:hover { border-color: var(--gold); color: var(--ink); }
+  .chip.selected { background: var(--ink); border-color: var(--ink); color: white; }
+
+  .submit-btn { width: 100%; padding: 14px; background: var(--ink); color: white; border: none; border-radius: 12px; font-family: 'Playfair Display', serif; font-size: 16px; cursor: pointer; transition: all 0.15s; margin-top: 4px; }
+  .submit-btn:hover { background: #2e2e3e; transform: translateY(-1px); }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--green); color: white; padding: 13px 24px; border-radius: 30px; font-size: 14px; font-weight: 700; z-index: 200; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .log-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .log-title { font-family: 'Playfair Display', serif; font-size: 22px; }
+  .log-count { background: var(--gold-light); color: var(--gold); font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .export-btn { width: 100%; padding: 13px; background: var(--gold); color: white; border: none; border-radius: 12px; font-family: 'Lato', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.04em; cursor: pointer; margin-bottom: 20px; transition: all 0.15s; }
+  .export-btn:hover { background: #a07830; }
+
+  .entry-card { background: var(--white); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; position: relative; }
+  .entry-name { font-weight: 700; font-size: 15px; }
+  .entry-company { font-size: 13px; color: var(--muted); margin-bottom: 5px; }
+  .entry-meta { font-size: 11.5px; color: #b0a898; margin-bottom: 4px; }
+  .entry-tag { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: var(--gold-light); color: var(--gold); margin-right: 4px; margin-bottom: 3px; }
+  .entry-notes { font-size: 13px; color: var(--ink); line-height: 1.5; background: var(--paper); border-radius: 7px; padding: 8px 10px; margin-top: 6px; }
+  .delete-btn { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #ccc; cursor: pointer; font-size: 14px; padding: 3px 5px; transition: color 0.15s; }
+  .delete-btn:hover { color: var(--rust); }
+  .empty-log { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+  .empty-icon { font-size: 36px; margin-bottom: 10px; }
+
+  @media (max-width: 400px) { .field-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">Transform <span>2026</span></div>
+    <div class="header-meta">March 23–25 · Las Vegas</div>
+  </div>
+  <div class="header-right">
+    <button class="hbtn hbtn-log active-view" id="btnLog" onclick="showView('log-view')">+ Log</button>
+    <button class="hbtn hbtn-list" id="btnList" onclick="showView('list-view')">All Entries</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">✓ Connection logged!</div>
+
+<div class="main">
+
+  <div id="log-view">
+    <div class="who-bar">
+      <div class="who-bar-label">You are</div>
+      <select id="svMember" onchange="saveMember()">
+        <option value="">— pick your name —</option>
+        <option>Allison Baum Gates</option>
+        <option>Robby Peters</option>
+        <option>Colin Tobias</option>
+        <option>Amanda Paolino</option>
+        <option>Raquel Scott</option>
+        <option>Simran Arora</option>
+        <option>Anisha Kalyani</option>
+        <option>Dalton Dahms-Shermer</option>
+        <option>Madeline Walton</option>
+        <option>Hanna Aziz</option>
+        <option>Richard Barghash</option>
+        <option>Anna Caruso Sichenzia</option>
+      </select>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-title">Log a connection</div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Their Name</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="extName" placeholder="Start typing…" autocomplete="off" oninput="autocomplete(this.value)" onkeydown="acKeydown(event)">
+            <div class="autocomplete-list" id="acList"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Their Company</label>
+          <input type="text" id="extCompany" placeholder="Company name" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Where you met <span style="font-weight:400;text-transform:none;">(optional)</span></label>
+        <div class="chip-row" id="eventChips">
+          <button class="chip" onclick="toggleChip(this,'event')">SVA Advisor Dinner</button>
+          <button class="chip" onclick="toggleChip(this,'event')">HR Venture Advisor Dinner</button>
+          <button class="chip" onclick="toggleChip(this,'event')">VC Friends Brunch</button>
+          <button class="chip" onclick="toggleChip(this,'event')">SemperVirens Summit</button>
+          <button class="chip" onclick="toggleChip(this,'event')">SV LP Dinner</button>
+          <button class="chip" onclick="toggleChip(this,'event')">Transform Happy Hour</button>
+          <button class="chip" onclick="toggleChip(this,'event')">AGM</button>
+          <button class="chip" onclick="toggleChip(this,'event')">SV & Sequoia Happy Hour</button>
+          <button class="chip" onclick="toggleChip(this,'event')">Formal Meeting</button>
+          <button class="chip" onclick="toggleChip(this,'event')">Outside of event</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Action Tags <span style="font-weight:400;text-transform:none;">(select all that apply)</span></label>
+        <div class="chip-row" id="actionChips">
+          <button class="chip" onclick="toggleChip(this,'action')">🤝 Intro to make</button>
+          <button class="chip" onclick="toggleChip(this,'action')">📨 Send something</button>
+          <button class="chip" onclick="toggleChip(this,'action')">📅 Schedule a meeting</button>
+          <button class="chip" onclick="toggleChip(this,'action')">💬 Discuss internally</button>
+          <button class="chip" onclick="toggleChip(this,'action')">✅ No action needed</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Next Steps / Notes <span style="font-weight:400;text-transform:none;">(optional)</span></label>
+        <textarea id="notes" placeholder="e.g. Intro to Stepful + Summer — follow up by Friday. Send deck."></textarea>
+      </div>
+
+      <button class="submit-btn" onclick="logEntry()">Log Connection</button>
+    </div>
+  </div>
+
+  <div id="list-view" style="display:none;">
+    <div class="log-header">
+      <div class="log-title">All Connections <span class="log-count" id="totalCount">0</span></div>
+    </div>
+    <button class="export-btn" onclick="exportCSV()">⬇ Export to CSV</button>
+    <div id="entryList"></div>
+  </div>
+
+</div>
+
+<script>
+const GUESTS = [{"name": "Mary Aaron", "company": "Anthem Blue Cross"}, {"name": "Rami Abouemira", "company": "All Good HR"}, {"name": "Sadrish Acharya", "company": "ADP Ventures"}, {"name": "Katelyn Acrich", "company": "Franklin Park"}, {"name": "Avery Adams", "company": "12-48 Partners / Mariner Wealth"}, {"name": "Eric Adams", "company": "JFG Family Office (Johnson Financial Group)"}, {"name": "Diane Adams", "company": "Sprinklr"}, {"name": "Ernest Adams", "company": "Ford"}, {"name": "Al Adamsen", "company": "Adaptive Futures"}, {"name": "Debbie Adewale", "company": "Healthworx (CareFirst)"}, {"name": "Elan Adler", "company": "OneImaging"}, {"name": "Larry Adolf", "company": "The Wolfson Group"}, {"name": "Caroline Agin", "company": "ServiceNow"}, {"name": "Courtney Agnew", "company": "Courtney Agnew"}, {"name": "Marisabel Agosto", "company": "Sequoia"}, {"name": "Nii Ahene", "company": "Nii Ahene"}, {"name": "Brian Ahern", "company": "Brian Ahern"}, {"name": "Kevin Ahern", "company": "Kevin Ahern"}, {"name": "Liz Ahmed", "company": "Unum"}, {"name": "Kate Aiken", "company": "Arcellx, Inc.�"}, {"name": "Brejesh Aiyer", "company": ""}, {"name": "Angel Alamo", "company": "Houzz Inc."}, {"name": "James Alban", "company": "Delaware Life Insurance Company"}, {"name": "Brad Albrecht", "company": "Zell Family Office"}, {"name": "Ron Alcantara", "company": "Cigna"}, {"name": "Amy Alcazar", "company": "Workday Ventures"}, {"name": "Jon-Paul Ales-Barnicoat", "company": "AliveCor"}, {"name": "Sarah Alexander", "company": "Patch Caregiving"}, {"name": "Tommy Aliber", "company": "NPG"}, {"name": "Jaime Allen", "company": "ServiceNow"}, {"name": "Naomi Allen", "company": "Brightline"}, {"name": "Madeline Van Alstine", "company": "Sequoia"}, {"name": "Lucien Alziari", "company": "Prudential"}, {"name": "Tara Noonan Amaral", "company": "Riviera Advisors"}, {"name": "Rachel Anderson", "company": "Cigna Ventures"}, {"name": "Merritt Anderson", "company": "Merritt Anderson"}, {"name": "Jolen Anderson", "company": "Current: Betterup / Former BNY Mellon"}, {"name": "Ilkka Anhava", "company": "Merrimac Corporation"}, {"name": "Gabe Aranovich", "company": "Solara"}, {"name": "Troy Arnold", "company": "Echo Health Ventures"}, {"name": "Manish Asnani", "company": "Visa Inc."}, {"name": "David Aung", "company": "City of San Jose"}, {"name": "Taruna Aurora", "company": "Taruna Aurora"}, {"name": "Abbie Austin", "company": "Guardian"}, {"name": "Hassan Azar", "company": "Former: JLL"}, {"name": "James Bagley", "company": "James Bagley"}, {"name": "Brian Baker", "company": "Teneo"}, {"name": "Craig Ball", "company": "UPMC"}, {"name": "Kyle Baltuch", "company": "Ontra�"}, {"name": "Jill Barkin", "company": "Beacon Investments (Annie Proiettie Family)"}, {"name": "Brandon Barnes", "company": "Box"}, {"name": "Andrew Bartlow", "company": "People Leader Accelerator"}, {"name": "Tommy Batcha", "company": "JFG Family Office (Johnson Financial Group)"}, {"name": "Reema Batnagar", "company": "Pixar Animation Studios"}, {"name": "Shuchi Batra", "company": "GlobalFoundries"}, {"name": "Andrew Baumgartner", "company": "UBS"}, {"name": "Jack Bechta", "company": "Jack Bechta"}, {"name": "Sean Behr", "company": "Fountain"}, {"name": "Brian Bell", "company": "Brian Bell"}, {"name": "Laura Bell", "company": "Unum"}, {"name": "Jake Bendler", "company": "Ameritas"}, {"name": "Lily Benjamin", "company": "Amazon"}, {"name": "Blair Bennett", "company": "PepsiCo"}, {"name": "Jennifer Benz", "company": "Segal Benz"}, {"name": "Jennifer Bergdoll", "company": "Optum"}, {"name": "Mike Bergelson", "company": "Mike Bergelson"}, {"name": "Bradley Berger", "company": "Kompass Kapital (Jayson Kuti Family)"}, {"name": "Kyle Berger", "company": "Kompass Kapital"}, {"name": "Jake Berger", "company": "Clubhouse Capital (Bradley Berger Family)"}, {"name": "Jason Bergsman", "company": "semper virens LP"}, {"name": "Mark Berkowitz", "company": "Mark Berkowitz"}, {"name": "Eric Berman", "company": "Eric Berman"}, {"name": "Elizabeth Berman", "company": "Global Critical Logistics"}, {"name": "Alex Berruezo-Farguell", "company": "MetLife"}, {"name": "Tim� Betry", "company": "GoPro"}, {"name": "Mark Bharadwaj", "company": "Mark Bharadwaj"}, {"name": "Neerja Bharti", "company": ""}, {"name": "Naveen Bhateja", "company": "Growth Mark"}, {"name": "Amit Bhatti", "company": "TrueBridge"}, {"name": "Mohit Bhende", "company": "Karat"}, {"name": "Barb Bidan", "company": "Ryan"}, {"name": "Jake Biscoglio", "company": "Harvard Pilgrim Health Care"}, {"name": "Ben Bisconti", "company": "Ben Bisconti"}, {"name": "Cameron Black", "company": "Blue AZ"}, {"name": "Euan Blair", "company": "Multiverse"}, {"name": "Matt Blum", "company": "Cigna Ventures"}, {"name": "Nevin Boal", "company": "Unum"}, {"name": "Rich Boghosian", "company": "Peak Altitude Partners"}, {"name": "Deborah Borg", "company": "International Flavors & Fragrances"}, {"name": "Hala Borno", "company": "Trial Library"}, {"name": "Joe Bosch", "company": "Semper Virens"}, {"name": "Megan Boudreau", "company": "Megan Boudreau"}, {"name": "John Boudreau", "company": "Former USC"}, {"name": "Amy Bouque", "company": "Kelly Services"}, {"name": "Michele Bousquet", "company": "Strava"}, {"name": "Colleen Bower", "company": "Elevance Carelon"}, {"name": "Raffi Boyajian", "company": "Cigna Ventures"}, {"name": "Eric Bradley", "company": "Berks Group (NPG Investments LLC)"}, {"name": "Brian Bradley", "company": "Berks Group (NPG Investments LLC)"}, {"name": "John Bradner", "company": "John Bradner"}, {"name": "Jocelyn Bradshaw", "company": "Jocelyn Bradshaw"}, {"name": "Tyler Bradshaw", "company": "Harris Williams LLC"}, {"name": "Eric Braun", "company": "Kompass Kapital"}, {"name": "Duane Bray", "company": "Product Officer, Groopit (Former IDEO)"}, {"name": "Nick Brecker", "company": "minaret advisors llc"}, {"name": "Natalie Breece", "company": "ThredUp"}, {"name": "Todd Breeden", "company": "Jefferies"}, {"name": "Jay Bregman", "company": "Andel"}, {"name": "Brian Bremner", "company": "Adams Street"}, {"name": "Barbie Brewer", "company": "Camunda"}, {"name": "LIZ BRODERICK", "company": "Spring Health"}, {"name": "Drew Brookie", "company": "ServiceNow"}, {"name": "Bill Brown", "company": "Alera Group"}, {"name": "Steve Brown", "company": "actAVA AI"}, {"name": "Dee Brown", "company": ""}, {"name": "Coco Brown", "company": "Athena Alliance"}, {"name": "Conor Brumfield", "company": "Anthem"}, {"name": "Debra Bruneau", "company": "KBI BIOPHARMA"}, {"name": "Josh Bruno", "company": "Rula"}, {"name": "Jessica Bryant", "company": "Wagmo"}, {"name": "Tony Buffum", "company": "Human Cloud"}, {"name": "Brian Bules", "company": "Breakthrough Business Strategies and Solutions"}, {"name": "Brad Bullock", "company": "Marsh McLennan Agency"}, {"name": "Curt Burghardt", "company": "Unum"}, {"name": "Heidi Burnett", "company": "Aon"}, {"name": "Brent Burns", "company": "UPMC"}, {"name": "Ben Burrowes", "company": "Zoma Capital"}, {"name": "Ken Burtnick", "company": "Paychex"}, {"name": "Fawad Butt", "company": "Penguin AI"}, {"name": "Derek Butts", "company": "Derek Butts"}, {"name": "Laura Gomez Cadena", "company": "Healthworx Ventures (Carefirst BCBS)"}, {"name": "John Cake", "company": "Premera - Blue Cross"}, {"name": "Jacob Caldwell", "company": "Blue Cross Blue Shield AZ (Trinnovate Ventures, LLC)"}, {"name": "Olivia Cameron", "company": "Helm Health"}, {"name": "Jacqui Canney", "company": "ServiceNow"}, {"name": "Steve carnevale", "company": "Blue Ash Ventures"}, {"name": "William Carson", "company": "William Carson"}, {"name": "Suzanne Carson", "company": "Suzanne Carson"}, {"name": "Dean Carter", "company": "Former: Guild Education, Patagonia"}, {"name": "Ben Carter", "company": "Workday"}, {"name": "Scott Carver", "company": "Scott Carver"}, {"name": "Michael Case", "company": "Michael Case"}, {"name": "Joanna Castillo", "company": "Sequoia"}, {"name": "Jamie Ceglarz", "company": "Jamie Ceglarz"}, {"name": "Michael Cerrone", "company": "Michael Cerrone"}, {"name": "Candice Chafey", "company": "Zeta Global"}, {"name": "Emily Chardac", "company": "Former One"}, {"name": "Mahima Chawla", "company": "Cocoon"}, {"name": "Marion Chebet", "company": "The Beacon Fund"}, {"name": "Sina Chehrazi", "company": "Nayya"}, {"name": "Adam Chekroud", "company": "Spring Health"}, {"name": "Yi-Ling Chen", "company": "Yi-Ling Chen"}, {"name": "Clark Cheng", "company": "Merrimac"}, {"name": "Fang Cheng", "company": "Caeli"}, {"name": "Angela Cheng-Cimini", "company": "The Chronicle of Philanthropy"}, {"name": "Jennifer Chinn", "company": "Jennifer Chinn"}, {"name": "Jack Chitayat", "company": "Jack Chitayat"}, {"name": "Olivia Chiu", "company": "Zell Family Office"}, {"name": "Jane Lee Choe", "company": "Midi"}, {"name": "Gaurang Choksi", "company": "Violet"}, {"name": "Udai Chopra", "company": "FoW Partners"}, {"name": "Amit Chowdhary", "company": "BNY Mellon"}, {"name": "Narayan Chowdhury", "company": "Franklin Park"}, {"name": "Reid Christian", "company": "CRV"}, {"name": "Brian Christman", "company": ""}, {"name": "Neal Chuenprateep", "company": "OpenAI"}, {"name": "Craig Cimini", "company": "Cigna Ventures"}, {"name": "Stephen Cisarik", "company": "Stephen Cisarik"}, {"name": "Jordan Clancey", "company": "Abo Ventures"}, {"name": "Mike Clancey", "company": "FCI Inc."}, {"name": "Janet Clardy", "company": "Experian"}, {"name": "Jaimie Clark", "company": "Wellstar"}, {"name": "Mandy Clark", "company": "Formerly Shutterfly"}, {"name": "Sandra Clarke", "company": "SDF Advisory"}, {"name": "Sophie Clarke", "company": "BCBS MA / Zaffre Investments"}, {"name": "Mike Clementi", "company": "CHRO"}, {"name": "Lybra S. Clemons", "company": "Former Twilio, PayPal"}, {"name": "Jed Cloern", "company": "Jed Cloern"}, {"name": "Deirdre Clute", "company": "Rightfoot"}, {"name": "David Cochrane", "company": "Livewell Capital"}, {"name": "Louise Cochrane", "company": "Louise Cochrane"}, {"name": "Laura Cococcia", "company": "Council Advisors"}, {"name": "Carina Coelho", "company": "Jefferies"}, {"name": "Craig Cohen", "company": "People 2.0"}, {"name": "Robert Cohen", "company": "Robert Cohen"}, {"name": "Wanda Cole-Frieman", "company": "CommonSpirit Health"}, {"name": "Kathryn Coleman", "company": "Former 3M"}, {"name": "Shawn Colo", "company": "Shawn Colo"}, {"name": "Frank Congiu", "company": "Randstad"}, {"name": "Jerry Connolly", "company": "Anthem Blue Cross"}, {"name": "Jim Conti", "company": "Hyde Park Venture Partners"}, {"name": "David Cook", "company": "Sequoia"}, {"name": "Dustin Cook", "company": "Intermountain Ventures"}, {"name": "Sean Cook", "company": "Environmental Defense Fund"}, {"name": "John Cooper", "company": "Wellstar"}, {"name": "Guillermo Corea", "company": "SHRM"}, {"name": "Al Cornish", "company": "MSEP / Al Cornish"}, {"name": "Jason Corsello", "company": "Acadian Ventures"}, {"name": "Jonathan Coslet", "company": "Jonathan Coslet"}, {"name": "Luciano Costantini", "company": "Luciano Costantini"}, {"name": "Henri Cournand", "company": "HC Advisory"}, {"name": "Kris Cournand", "company": "Kris Cournand"}, {"name": "Kevin Cranston", "company": "Reliance Standard"}, {"name": "Adam Crawford", "company": ""}, {"name": "Willson Cross", "company": "Borderless AI"}, {"name": "Anthony Cuaresma", "company": "PeopleFirst M&amp;A Partners"}, {"name": "Laritza D'amato", "company": "MetLife"}, {"name": "Thomas D'Anieri", "company": "Goldman Sachs"}, {"name": "David Dadiomov", "company": "Unum Ventures"}, {"name": "Melissa Daimler", "company": "Udemy"}, {"name": "Sonali Dalal", "company": "University of St Thomas Endowment"}, {"name": "Richard Dale", "company": "BCBS MA / Zaffre Investments"}, {"name": "Erin Dangerfield", "company": "Golden State Warriors"}, {"name": "Laura Dannels", "company": "UCSF, former Wellstar"}, {"name": "Matthew Darula", "company": "Guardian Life"}, {"name": "Pradeepta Dash", "company": "Exceeds ai"}, {"name": "Sejal Daswani", "company": "Current: Deputy / Former Sunrun"}, {"name": "Robert David", "company": "CSHRP"}, {"name": "Jonathan Davis", "company": "Trualta (BERKS)"}, {"name": "Michael Deangelo", "company": "Bill.com"}, {"name": "Jenny Dearborn", "company": "Former : Klaviyo"}, {"name": "Dan Deets", "company": "ServiceNow"}, {"name": "Craig DeLucia", "company": "Lucky Waters Investments / Broward Grove (Charlotte)"}, {"name": "Angel Demirev", "company": "Consulting"}, {"name": "Jo Dennis", "company": "Former Pinterest"}, {"name": "Liz Dente", "company": "Priceline"}, {"name": "Josh Desai", "company": "Peak Altitude Partners"}, {"name": "Charles DeShazer", "company": "Cigna Healthcare"}, {"name": "Julie Develin", "company": "UKG (Ultimate Kronos Group)"}, {"name": "Veni Dhir", "company": "ADP Ventures"}, {"name": "Jeff Diana", "company": "Advising for Impact"}, {"name": "Tracy St. Dic", "company": "Zapier"}, {"name": "Charles Dietrich", "company": "Self/OpNet"}, {"name": "Aaron Dignan", "company": "Murmur"}, {"name": "Jennifer Dimichino", "company": "ServiceNow"}, {"name": "June Dinitz", "company": "EPAM"}, {"name": "Gabe Diop", "company": "Rula"}, {"name": "Maren Dollwet", "company": "Walmart"}, {"name": "Niya Dragova", "company": ""}, {"name": "Kelli Dragovich", "company": "�Pendo.io"}, {"name": "Gianna Driver", "company": "Exabeam"}, {"name": "Samanntha Dubridge", "company": "HPE"}, {"name": "Jeremy Duggan", "company": "Multiverse"}, {"name": "Heather Dunn", "company": "Brex"}, {"name": "ANNAMARIE DUNN", "company": "MoralesHR"}, {"name": "Emily Durfee", "company": "Healthworx (CareFirst)"}, {"name": "Ranjan Dutta", "company": "ThothProAI"}, {"name": "Shari Eaton", "company": "Chobani"}, {"name": "Senan Ebrahim", "company": "Delfina"}, {"name": "Anat Gan Eden", "company": "Current: Maxar Technologies / Former:Verra Mobility"}, {"name": "Chuck Edward", "company": "Microsoft"}, {"name": "Kevin Edwards", "company": "Carnegie Mellon University"}, {"name": "David Eichler", "company": "Valeo Ventures"}, {"name": "Scot Eisendrath", "company": "Scot Eisendrath"}, {"name": "Hendrik Van Eldere", "company": "TechWolf"}, {"name": "Tricia Elias", "company": "Vantage DC"}, {"name": "Brian Elliott", "company": "Work Forward"}, {"name": "Michael Ellis", "company": "Blue Shield of California"}, {"name": "chris ellis", "company": "Thatch"}, {"name": "Aaron Ellis", "company": "Workday Ventures"}, {"name": "Chris Ellis", "company": "Thatch"}, {"name": "Benjamin Encz", "company": "Ashby"}, {"name": "Eric Enser", "company": "Paychex"}, {"name": "Shawna� Erdmann", "company": "Comcast"}, {"name": "Thomas Erlin", "company": "Thomas Erlin"}, {"name": "Sergio Ezama", "company": "Netflix"}, {"name": "Sy Fahimi", "company": "Kaiser Permanente"}, {"name": "Robert Falconer", "company": "Robert Falconer"}, {"name": "Marz Family", "company": "Marz Family"}, {"name": "Amy Farner", "company": "The Josh Bersin Company"}, {"name": "Bilal Farooqui", "company": "Sunny Health AI"}, {"name": "juliane farrand", "company": "Joby Aviation"}, {"name": "Chris Fazzini", "company": "Reliance Standard"}, {"name": "David Feinberg", "company": "Justworks"}, {"name": "Kristy Feldkamp", "company": "HP"}, {"name": "Jordan Feldman", "company": "Rightway Healthcare"}, {"name": "Roger Ferguson", "company": "AWM Capital"}, {"name": "John Ferguson", "company": "NASCAR"}, {"name": "Gail Fierstein", "company": "Caastle"}, {"name": "Brent Filson", "company": "UKG"}, {"name": "Paul Fingersh", "company": "Paul Fingersh"}, {"name": "Nicole Fitz", "company": "Ally"}, {"name": "Ian Flatt", "company": "Lockton"}, {"name": "Dan Floriani", "company": "Dan Floriani"}, {"name": "Justin Fong", "company": "CommonSpirit Health"}, {"name": "Mike Fontaine", "company": "KPMG"}, {"name": "Ron Fontenetta", "company": "WTW"}, {"name": "Darrell Ford", "company": "UPS"}, {"name": "Sophie Forest", "company": "Bush Foundation (MN)"}, {"name": "Kyle Forrest", "company": "Deloitte Consulting LLP"}, {"name": "Greg Franczyk", "company": "Wingspan"}, {"name": "Rich Frankenberg", "company": "CGF Holdings"}, {"name": "Joseph Freed", "company": "Perceptyx"}, {"name": "David French", "company": "David French"}, {"name": "Carolyn frey", "company": "Hungryroot"}, {"name": "Carolyn Frey", "company": "Hungryroot"}, {"name": "Lisa Friscia", "company": "Franca Consulting"}, {"name": "Joe Gage", "company": ""}, {"name": "Mariana Garavaglia", "company": "Current: DoorDash / Former: Peloton"}, {"name": "Anjelica Garcia", "company": "N/A"}, {"name": "Tristan Gardner", "company": "Sequoia"}, {"name": "Brooke Gardner", "company": "Brooke Gardner"}, {"name": "Roja Garimella", "company": "Kubera"}, {"name": "Danielle Garver", "company": "MetLife"}, {"name": "Crystal Gaskin", "company": "former Mailchimp"}, {"name": "Jason Gates", "company": "Jason Gates"}, {"name": "Andrew Gaweco", "company": "Indeed (Venture Investments)"}, {"name": "Brendon Geils", "company": "Athena AI"}, {"name": "Gemma", "company": "Denlow"}, {"name": "Andreas Georgiadis", "company": "Synetro (Georgiadis Family / Blue Sage Partners, LLC)"}, {"name": "Pete Georgiadis", "company": "Synetro (Georgiadis Family / Blue Sage Partners, LLC)"}, {"name": "Robert Gerber", "company": "7wire Ventures"}, {"name": "Mike Gerold", "company": "Delaware Life Insurance Company"}, {"name": "Elad Gerson", "company": "Elad Gerson"}, {"name": "Diane Gherson", "company": "Techwolf"}, {"name": "Will Giaconia", "company": "Fidelity"}, {"name": "Marco Giberti", "company": "Marco Giberti"}, {"name": "Jim Gibson", "company": "Jim Gibson"}, {"name": "Dave Gibson", "company": "UPMC"}, {"name": "Franz Gilbert", "company": "Deloitte Consulting"}, {"name": "Trey Gill", "company": "Wasson Enteprises (SFO)"}, {"name": "Marie Gill", "company": "aetheon inc"}, {"name": "Jeff Giovannelli", "company": "Guardian"}, {"name": "Reed Goldberg", "company": "Morgan Health"}, {"name": "Camille Golub", "company": "PeopleLoop"}, {"name": "Kelly Golub", "company": "Sequoia"}, {"name": "Sophie Golub", "company": "Sophie Golub"}, {"name": "Vivian Golub", "company": "Vivian Golub"}, {"name": "Greg Golub", "company": "Greg Golub"}, {"name": "Brian Gong", "company": "Cameron Ventures"}, {"name": "Jose Gonzalez", "company": "Sequoia Consulting Group"}, {"name": "Brandon Goode", "company": "Outro Health"}, {"name": "Roger Goulart", "company": "Roger Goulart"}, {"name": "Ken Goulet", "company": "KRG Advisers"}, {"name": "Gauri Goyal", "company": "Gauri Goyal"}, {"name": "Rachel Grace", "company": "ConcertoCare"}, {"name": "Lesley Grady", "company": "Lesley Grady"}, {"name": "Sumona Basu de Graff", "company": "Current: Founder at idealis / Former Republic Services"}, {"name": "Joey Grant", "company": "CGF Holdings"}, {"name": "Tom Gratian", "company": "Former Tiktok"}, {"name": "Erin Grau", "company": "Charter"}, {"name": "Maisha Gray-Diggs", "company": "LiveRamp"}, {"name": "Emily Griese", "company": "Blue Cross Blue Shield Minnesota"}, {"name": "Tom Griffiths", "company": "Hone"}, {"name": "Matthias De Groote", "company": "TechWolf"}, {"name": "Beth Grous", "company": "Generate: Biomedicines"}, {"name": "Kevin Grubb", "company": "Strada Education Foundation"}, {"name": "Rob Gudbranson", "company": "Rob Gudbranson"}, {"name": "Ron Gura", "company": "Empathy"}, {"name": "Matthew Guss", "company": "Next Horizon Leadership"}, {"name": "Corey Hahn", "company": "Mcgriff"}, {"name": "Jen Hajj", "company": "Galileo"}, {"name": "Jamie Hale", "company": "Ladder"}, {"name": "Adam Halper", "company": "Elevance Carelon"}, {"name": "Anja Hamilton", "company": "Former: Nutanix"}, {"name": "Q Hamirani", "company": "Current: HighLevel / Former: Airbnb"}, {"name": "Tom Hammond", "company": "Paychex"}, {"name": "Tec Han", "company": "Alder Companies"}, {"name": "Mike Hanagan", "company": "Strada Foundation"}, {"name": "Scott Hanford", "company": "Scott Hanford"}, {"name": "Catherine Hanrahan", "company": "Catherine Hanrahan"}, {"name": "Paula Hanson", "company": "Reliance Matrix"}, {"name": "Matt Hanson", "company": "Alera Group"}, {"name": "Matthew Hanson", "company": "Matthew Hanson"}, {"name": "Wayne Harris", "company": "Wayne Harris"}, {"name": "Christy Harris", "company": "CCC�"}, {"name": "Kathleen Harris", "company": "Current: Level / Former: Time Warner"}, {"name": "Toni Harris", "company": "Netflix"}, {"name": "Liz Hartley", "company": "Good Reason Capital"}, {"name": "Steven Hatfield", "company": ""}, {"name": "Amy Hayes", "company": "Meta"}, {"name": "Elston He", "company": "Delaware Life Insurance Company"}, {"name": "Scott Hebert", "company": "Second Door Health"}, {"name": "Christine Heckart", "company": ""}, {"name": "Kathryn Heffernan", "company": "UPMC"}, {"name": "Allison Heilman", "company": "Christies"}, {"name": "Tiffany Heimpel", "company": "Hireguide"}, {"name": "Chaz Heitner", "company": "Hatch"}, {"name": "Amaury Hellebuyck", "company": "TechWolf"}, {"name": "Ron Heller", "company": "Woodside Capital Partners"}, {"name": "Adam Hellman", "company": "Brighton Marine Inc"}, {"name": "Bill Henderson", "company": "Bill Henderson"}, {"name": "Tom Henderson", "company": "Cleveland Clinic Investment Office"}, {"name": "Lisa Henderson", "company": "Empowering People Leaders"}, {"name": "Patrick Hennessey", "company": "32 Biosciences"}, {"name": "Michael Herrmann", "company": "Cloverfields Capital"}, {"name": "Jim Hettenbach", "company": "Unum"}, {"name": "Canon Hickman", "company": "Canon Hickman"}, {"name": "Colin Higgins", "company": "Summitry"}, {"name": "Brad Hill", "company": "Sequoia"}, {"name": "Katie Hill", "company": "Aon"}, {"name": "Jessica Hinkle", "company": "Strada Education Foundation"}, {"name": "Linda Ho", "company": "Nearmap"}, {"name": "Matan Hoffman", "company": "Carefam"}, {"name": "Tessa Holm", "company": "Sequoia"}, {"name": "Doug Holte", "company": "Doug Holte"}, {"name": "Tomas Holub", "company": "CoverGo"}, {"name": "Caribou Honig", "company": "Caribou Honig"}, {"name": "Christie Horvath", "company": "Wagmo"}, {"name": "Andrew Hosker", "company": "Fidelity"}, {"name": "Bradley Howard", "company": "Bradley Howard"}, {"name": "Stephen Howard", "company": "Stephen Howard"}, {"name": "Barbora Howell", "company": "TrueClaim"}, {"name": "Eric Hu", "company": "Silicon Desert"}, {"name": "Annie Huang", "company": "Marquette Associates"}, {"name": "Christina Huizar", "company": ""}, {"name": "Mark Hull", "company": "Exceeds AI"}, {"name": "Victor Hwang", "company": "Victor Hwang"}, {"name": "William� Ingham", "company": "Current: Ouro / Former: Poshmark"}, {"name": "Ander Iruretagoyena", "company": "Impact Engine (Bernstein Impact Alternatives)"}, {"name": "Jeffrey Jacobs", "company": "Jeffrey Jacobs"}, {"name": "Rick Jacobs", "company": "Cedars-Sinai"}, {"name": "Laura Jacobs", "company": "Cheviot Health Advisors"}, {"name": "Heather Jacobs", "company": "Delaware North"}, {"name": "Adam Jacobs", "company": "Hatch"}, {"name": "sebastian jacobs", "company": "1Life Healthcare"}, {"name": "mike jafar", "company": "Joya health"}, {"name": "Jennifer Jaffe", "company": "FIGS"}, {"name": "Nicole James", "company": "Flywire"}, {"name": "Alison James", "company": "BIC"}, {"name": "Kirstin Jamieson", "company": "ServiceNow"}, {"name": "Spencer Jamison", "company": "Alder Companies"}, {"name": "Laura Jane", "company": ""}, {"name": "Janette Jankowski", "company": "Insight Partners"}, {"name": "Amar Jasarbasic", "company": "Clasp"}, {"name": "Sam Jazzo", "company": "KP Ventures"}, {"name": "Michelle Jefferies", "company": "Sequoia"}, {"name": "Jane Jensen", "company": "Self Employed"}, {"name": "Soo Jeon", "company": "Healthworx (CareFirst)"}, {"name": "Puja Jespal", "company": "�Fastly�"}, {"name": "Ravin Jesuthasan", "company": "Mercer"}, {"name": "Ravin Jesuthesan", "company": "Mercer"}, {"name": "Brandon Johnson", "company": "JFG Family Office (Johnson Financial Group)"}, {"name": "Ian Johnson", "company": "Prairie Capital (KC)"}, {"name": "Mike Johnson", "company": "Onboarded"}, {"name": "Cailyn Johnson", "company": "Athena Alliance"}, {"name": "Nate Jones", "company": "Nate Jones"}, {"name": "Alaina Jones", "company": "Finch"}, {"name": "Paul Jorgensen", "company": "Doximity"}, {"name": "Pruthav Joshi", "company": "Deloitte"}, {"name": "John Watts Jr.", "company": "Paradigm"}, {"name": "Erik Juhl", "company": "Erik Juhl"}, {"name": "Shawn Jung", "company": "ADP Ventures"}, {"name": "Ken Juricic", "company": ""}, {"name": "Rathin Kacham", "company": "Margaret A. Cargill Foundation"}, {"name": "David Kahane", "company": "Invus (InvOpps)"}, {"name": "Jenny Kang", "company": "Sequoia"}, {"name": "Andy Kaplan", "company": "MetLife"}, {"name": "Andrew Kaplan", "company": "Andrew Kaplan"}, {"name": "Jon Kaplan", "company": "BCG"}, {"name": "Deep Kapur", "company": "Amera"}, {"name": "Avinash Karnani", "company": "Alice"}, {"name": "Reddy Karri", "company": "Vetty"}, {"name": "Tsigemariam Tadese Kassa", "company": "Tsigemariam Tadese Kassa"}, {"name": "Michael Keane", "company": "Former CAO / CHRO, PF Changs"}, {"name": "Alex Kehayias", "company": "Mosey"}, {"name": "Tom Keitel", "company": "Great American Insurance"}, {"name": "Clay Kellogg", "company": "Clay Kellogg"}, {"name": "Jacques Kerrest", "company": "Jacques Kerrest"}, {"name": "Dave Kerrigan", "company": "BenefitPitch"}, {"name": "Robert Kesmodel", "company": "Robert Kesmodel"}, {"name": "Hall Kesmodel", "company": "Sequoia"}, {"name": "Mike Khamis", "company": "Segal Benz"}, {"name": "Oz Khan", "company": "ADP Ventures"}, {"name": "Meghna Khatri", "company": ""}, {"name": "Joon-Li Kim", "company": "Joon-Li Kim"}, {"name": "Steve Kim", "company": "Steve Kim"}, {"name": "Felix Kim", "company": "Next Ventures"}, {"name": "Jessica Kim", "company": "Ianacare"}, {"name": "Callum King", "company": "Callum King"}, {"name": "Emma King", "company": "Envoy"}, {"name": "Michael Kinsman", "company": "Michael Kinsman"}, {"name": "Kelley Kirk", "company": "Finch"}, {"name": "Shannon Kirk", "company": "California Pizza Kitchen"}, {"name": "Melissa Klassman", "company": ""}, {"name": "Ken Klein", "company": "Praisidio"}, {"name": "Avery Klinger", "company": "Aquiline"}, {"name": "Andy Klocke", "company": "Prairie Capital (KC)"}, {"name": "Ross Klosterman", "company": "Helm Health"}, {"name": "Randy Knaflic", "company": "Randy Knaflic"}, {"name": "Molly Knapp", "company": "Sequoia"}, {"name": "Donald Knight", "company": "Warner Bros. Discovery"}, {"name": "Monica Pool Knox", "company": "Good Trouble Ventures"}, {"name": "April Koh", "company": "Spring Health"}, {"name": "Drew Komenda", "company": "BERKS Group"}, {"name": "Ryan Koo", "company": "Marsh"}, {"name": "Terry Koosed", "company": "Terry Koosed"}, {"name": "Philip Koosed", "company": "Philip Koosed"}, {"name": "Eric Kosmack", "company": "Sequoia"}, {"name": "Hope Kragh", "company": "Premera - Blue Cross"}, {"name": "John Kramer", "company": "Salsa"}, {"name": "Jeff Krautkramer", "company": "Madison Air"}, {"name": "Rajamma Krishnamurthy", "company": "Current: Microsoft / Former Pfizer"}, {"name": "Seungha Ku", "company": "Nexus Bay Capital (Seungha Ku)"}, {"name": "Elson Kuriakose", "company": "Coherent"}, {"name": "Matt Kurth", "company": "Northwell Health"}, {"name": "Kenn Kurtz", "company": "Kenn Kurtz"}, {"name": "Alex Kweskin", "company": "Banc of California"}, {"name": "Christy Lake", "company": "Twilio"}, {"name": "Chantal Landman", "company": "Chantal Landman"}, {"name": "David Landman", "company": "HR Elevate"}, {"name": "Andy Lang", "company": "Fiduciary Counseling  (Weyerhauser Family - Clearwater Private Opportunity Fund)"}, {"name": "Thad Langford", "company": "Flyover Capital"}, {"name": "Michael Laquere", "company": "Michael Laquere"}, {"name": "Jill Larsen", "company": "Synopsys Inc"}, {"name": "Todd Lathrop", "company": "Polaris Growth Advisors"}, {"name": "William Lathrop", "company": "William Lathrop"}, {"name": "Katie� Lawler�", "company": "ITW"}, {"name": "EJ Lawless", "company": "Indeed.com"}, {"name": "Marisa Lawrence", "company": "EisnerAmper"}, {"name": "Bob Lawson", "company": "Bob Lawson"}, {"name": "John Lawson", "company": "John Lawson"}, {"name": "Vinh Le", "company": "BetterUp, Inc."}, {"name": "Jimmy Lee", "company": "SimpLee Healthcare"}, {"name": "Angela Lee", "company": "Angela Lee (37 Angels)"}, {"name": "Tom Lee", "company": "Galileo"}, {"name": "Joey Lee", "company": "�Current: Panda Restaurant Group / Former: Virgin Orbit"}, {"name": "Runae Lee", "company": "Finch"}, {"name": "Steven Lee", "company": "Ianacare"}, {"name": "Nicholas Leiby", "company": "Nicholas Leiby"}, {"name": "Larry Leisure", "company": "Chicago Pacific Founders"}, {"name": "Jeffrey Leisure", "company": "NearWater Growth"}, {"name": "Leander LeSure", "company": "Smarsh"}, {"name": "Scott Leuchter", "company": "Ideal Clamp Products"}, {"name": "Kurt Levensaler", "company": "Levensaler Family"}, {"name": "Leighanne Levensaler", "company": "Calibogue Advisors"}, {"name": "Liza Mash Levin", "company": "Gable"}, {"name": "Jon Levy", "company": "Influence Labs"}, {"name": "Mark Levy", "company": "Former Airbnb"}, {"name": "Scott Lewis", "company": "Scott Lewis"}, {"name": "Tracy Lewis", "company": "Tracy Lewis"}, {"name": "Sherry Li", "company": "ADP Ventures"}, {"name": "Rona Li", "company": "SCAN Health Plan"}, {"name": "Tim Lieb", "company": "Blue Shield of California"}, {"name": "Sarah Liebel", "company": "Nayya"}, {"name": "Erin Lierheimer", "company": "Paychex"}, {"name": "Kurt Lin", "company": "Pinwheel"}, {"name": "Warren Lindley", "company": "SC Johnson"}, {"name": "Marcus Lindroos", "company": "Adams Street"}, {"name": "Joe Lionberger", "company": "Ameritas"}, {"name": "Devin Lipawsky", "company": "Wells Fargo"}, {"name": "Mark Lipscomb", "company": "Adobe"}, {"name": "Darren List", "company": "Darren List"}, {"name": "Kyna Liu", "company": "Goldman Sachs"}, {"name": "Priscilla Liu", "company": "Beacon Investments (Annie Proiettie Family)"}, {"name": "Mimi Liu", "company": "Doro Mind"}, {"name": "Jess Liu", "company": "Nationwide Ventures"}, {"name": "Irene Liu", "company": "Hypergrowth GC"}, {"name": "Rick Livesay", "company": "Nava Benefits"}, {"name": "Ben Lloyd", "company": "JFG Family Office (Johnson Financial Group)"}, {"name": "Barbara Weaver Lloyd", "company": "Gallagher"}, {"name": "Molly Loftus", "company": "Molly Loftus Consulting LLC"}, {"name": "Jennifer Longnion", "company": "former Flexport, Dollar Shave Club"}, {"name": "Lauren Lotka", "company": "LOTKA&amp;CO"}, {"name": "Kevin Lowell", "company": "US Cellular"}, {"name": "Gretchen Lucas", "company": "Gretchen Lucas"}, {"name": "Oksana Lukash", "company": ""}, {"name": "Stela Lupushor", "company": "Reframe.Work Inc."}, {"name": "Tristan Mace", "company": "Flyover Capital"}, {"name": "Daniel Macklin", "company": "Summer"}, {"name": "Carl Madi", "company": "Stepful"}, {"name": "Raj Mahajan", "company": "Raj Mahajan"}, {"name": "Thomas Mahony", "company": "Thomas Mahony"}, {"name": "Stela Maksutaj", "company": "TechWolf"}, {"name": "Mita Mallick", "company": "Carta"}, {"name": "Mark Mangiola", "company": "Mark Mangiola"}, {"name": "Parker Mar", "company": "XP Health"}, {"name": "Jose Martin", "company": "SF Giants"}, {"name": "Michelle Martin", "company": "Michelle Martin"}, {"name": "Joel Martinez", "company": "Amazon"}, {"name": "Lori Castillo Martinez", "company": "Gradient Partners, LLC"}, {"name": "Audrey Massoni", "company": "ADP"}, {"name": "Yoko Masuda", "company": "Tokio Marine Holdings"}, {"name": "Aaron Matos", "company": "Silicon Desert"}, {"name": "Jorgo Mavromatis", "company": "Sequoia"}, {"name": "Dan Mayernick", "company": "Paychex"}, {"name": "Todd Mayhew", "company": "Credit One Bank"}, {"name": "Tina Mayhew", "company": "Cox"}, {"name": "Erin McAuley", "company": "Springline Advisory"}, {"name": "Reed McBride", "company": "Mintaka VC"}, {"name": "Adriene McCoy", "company": "Baptist Health"}, {"name": "Barbry McGann", "company": "Workday Ventures"}, {"name": "Donald McGraw", "company": "EisnerAmper"}, {"name": "Cecilia McKenney", "company": "CHRO"}, {"name": "Kevin McPhilips", "company": "Reliance Standard"}, {"name": "Kevin McPhillips", "company": "Reliance Matrix"}, {"name": "Iris McQuillan-Grace", "company": "Jellyfish"}, {"name": "Katie McSweeney", "company": "Katie McSweeney"}, {"name": "Kevin Mead", "company": "Market Access Specialists LLC"}, {"name": "RIlwan Meeran", "company": "britebound"}, {"name": "Dipa Mehta", "company": "Valeo (Previous Blue KC)"}, {"name": "Sandra Mello", "company": "Kaiser Permanente"}, {"name": "Karyn Meola", "company": "Bill.com"}, {"name": "Jeff Merkel", "company": "Ladder"}, {"name": "Deon Metelski", "company": "actAVA AI"}, {"name": "Sophia Michaels", "company": "CVS Health Ventures"}, {"name": "Joe Militello", "company": "Mechanical Orchard"}, {"name": "Melisa Miller", "company": "TKO Group"}, {"name": "RJ Milnor", "company": "former Uber / Currently at Valuetainment"}, {"name": "Anthony Mironov", "company": "Wingspan"}, {"name": "Neil Mishurda", "company": "Neil Mishurda"}, {"name": "Kamilah Mitchell-Thomas", "company": "Avaya"}, {"name": "Parker Mitchelle", "company": "Valence"}, {"name": "Amit Mohindra", "company": "People Analytics Success"}, {"name": "Dani Monaghan", "company": "Expedia Group"}, {"name": "Danielle Monaghan", "company": "Expedía Group"}, {"name": "Paola Moncini", "company": "Paola Moncini"}, {"name": "Chris Montaño", "company": "Abo Ventures (Yates Family Office)"}, {"name": "Antonio Moraes", "company": "XP Health"}, {"name": "Shelly Morales", "company": "MoralesHR"}, {"name": "Mark Moran", "company": "Mark Moran"}, {"name": "Christine Morehead", "company": "CGAdvisors, LLC"}, {"name": "Douglas Morgan", "company": "Douglas Morgan"}, {"name": "Eleanor Morgan", "company": "Liftoff"}, {"name": "Suzan Morno-Wade", "company": "Ascendio Management Group"}, {"name": "Riikka Morrill", "company": "Unum Group"}, {"name": "Julius Morris", "company": "McKesson�"}, {"name": "Kelli Morrison", "company": "Spring Health�"}, {"name": "Rich Mulry", "company": "Northwell"}, {"name": "Cher Murphy", "company": "ON Partners"}, {"name": "James Murphy", "company": "Reliance Standard"}, {"name": "Lisa Murray", "company": "Kauffman Foundation"}, {"name": "John Murray", "company": "Anthem Blue Cross"}, {"name": "Kurt Musselman", "company": "Reliance Standard"}, {"name": "John Nagle", "company": "Kavar Capital (KC)"}, {"name": "Manu Nair", "company": "Mayo Clinic"}, {"name": "Yuko Nakadaira", "company": "Yuko Nakadaira"}, {"name": "Aishu Nallapillai", "company": "Jefferies"}, {"name": "Arun Nallasivan", "company": "City of San Jose"}, {"name": "Tanvi Narain", "company": "Counterpart Ventures"}, {"name": "Kaushik Narasimhan", "company": "Take2 AI"}, {"name": "Sam Nasser", "company": "ADP Ventures"}, {"name": "Amanda Neely", "company": "Unum"}, {"name": "Sam Nelson", "company": ""}, {"name": "Andreas De Neve", "company": "TechWolf"}, {"name": "Josh Newman", "company": "ServiceNow"}, {"name": "Laura McCoolidge Nguyen", "company": "Strada Foundation"}, {"name": "Edward Nguyen", "company": "Edward Nguyen"}, {"name": "thanh nguyen", "company": "crusoe"}, {"name": "Heather Nicholson", "company": "Lightspeed Commerce Inc."}, {"name": "Cindy Nicola", "company": ""}, {"name": "Joseph Nosofsky", "company": "Joseph Nosofsky"}, {"name": "Lauren Nunes", "company": "Twitch (Amazon)"}, {"name": "Dermot O'Brien", "company": "ADP - Retired"}, {"name": "Ian O'Keefe", "company": "Former: Amazon, Director, Head of Talent Analytics and Science"}, {"name": "Demi Obayomi", "company": "Sapphire Ventures"}, {"name": "Randall Odzer", "company": "Randall Odzer"}, {"name": "Tyler Oertli", "company": "Fiduciary Counseling  (Weyerhauser Family - Clearwater Private Opportunity Fund)"}, {"name": "Bret Oettmeier", "company": "Bret Oettmeier"}, {"name": "Ian OKeefe", "company": "ikona Analytics"}, {"name": "Cornelius Olcott", "company": "Cornelius Olcott"}, {"name": "Shawna Oliver", "company": "Manulife"}, {"name": "Ahmed Omar", "company": "Sully.ai"}, {"name": "Kristin Orlowski", "company": "Calibre Scientific"}, {"name": "Jason Ostheimer", "company": "Jason Ostheimer"}, {"name": "Anna Ostrovsky", "company": "Anna Ostrovsky"}, {"name": "Quinn Ottwell", "company": "12-48 Partners / Mariner Wealth"}, {"name": "Theo Oulton", "company": "Multiverse"}, {"name": "Raphael Ouzan", "company": "A.Team"}, {"name": "Anne Ozzimo", "company": "Workday"}, {"name": "Karen Page", "company": "B Capital"}, {"name": "Tom Palecek", "company": "Tom Palecek"}, {"name": "Andrea De Palma", "company": "Great American Insurance"}, {"name": "Demetrius Palmer", "company": "Impact Engine (Bernstein Impact Alternatives)"}, {"name": "Tushar Pandit", "company": "SPINS"}, {"name": "Yogi Panjabi", "company": "�Current: PeopleLens / Former: Palo Alto Networks"}, {"name": "Abhay Parasnis", "company": "Typeface"}, {"name": "Ansel Parekh", "company": "Finch"}, {"name": "Amee Parekh", "company": "Current: Stello Technologies / Former Him and Hers, Uber/Expedia"}, {"name": "Mark Parelius", "company": "Mark Parelius"}, {"name": "Scott Parish", "company": "Hireguide"}, {"name": "Jenny Park", "company": "Nexus Bay Capital (Seungha Ku)"}, {"name": "Ed Park", "company": "UKG"}, {"name": "Judy Park", "company": "FoW Partners"}, {"name": "Priya Parrish", "company": "Impact Engine (Bernstein Impact Alternatives)"}, {"name": "Jason Parrott", "company": "Livez"}, {"name": "Doba Parushev", "company": "Healthworx (CareFirst)"}, {"name": "Ankur Patel", "company": "Multimodal"}, {"name": "Tom Patterson", "company": "BetterUp"}, {"name": "thomas patterston", "company": "betterup"}, {"name": "Sara Pelster", "company": "The Josh Bersin Company"}, {"name": "Bill Pelster", "company": "Josh Bersin Company"}, {"name": "Danielle Pensack", "company": "Rightfoot"}, {"name": "Savina Perez", "company": "Hone"}, {"name": "Tammy Perkins", "company": "Proservice (Previous)"}, {"name": "Nellie Peshkov", "company": "Reddit"}, {"name": "Ellen Peters", "company": "Peters Company"}, {"name": "Kelly Peters", "company": "Peters Family"}, {"name": "William Peters", "company": "Retired"}, {"name": "Robert Peters", "company": "Robert Peters"}, {"name": "Hamilton Petropoulos", "company": "Generation Capital"}, {"name": "Seth Peyla", "company": "ZOMA"}, {"name": "Sara Phillips", "company": "Great American Insurance"}, {"name": "Scott Pitasky", "company": "Former Amazon, Starbucks, Microsoft"}, {"name": "Prudence Pitter", "company": "AWS"}, {"name": "Shane Poppen", "company": "Shane Poppen"}, {"name": "Rebecca Port", "company": ""}, {"name": "Rick Porterfield", "company": "Guardian Life Insurance Company"}, {"name": "Don Potter", "company": "Cloverfields (Hemsley Family Office)"}, {"name": "Jeff Povelaites", "company": "Paychex"}, {"name": "Raghavendra Prabhu", "company": "Tezi"}, {"name": "Michael Prestileo", "company": "Guardian"}, {"name": "Ravin Puri", "company": "Guardian Life Insurance (GIS Strategic Ventures)"}, {"name": "Richard Qiu", "company": "Richard Qiu"}, {"name": "Grant Quibell", "company": "Grant Quibell"}, {"name": "Katrina Radenberg", "company": "12-48 Partners / Mariner Wealth"}, {"name": "vivek Rajanna", "company": "vivek Rajanna"}, {"name": "Shankar Ram", "company": "Phenyx"}, {"name": "Veena Ramaswamy", "company": "Guardian Life Insurance (GIS Strategic Ventures)"}, {"name": "Rohit Ramkumar", "company": "Fiat Ventures"}, {"name": "Vinayak Ranade", "company": "Vinayak Ranade"}, {"name": "Garry Randall", "company": "Current: Kl�ckner Pentaplast / Former: The Walt Disney Company"}, {"name": "Huggy Rao", "company": "Stanford"}, {"name": "Virginie Raphael", "company": "FullCircle"}, {"name": "Raj Raval", "company": "Unum"}, {"name": "Megan Rawlings", "company": "ADP"}, {"name": "Marty Reaume", "company": "Former Twilio"}, {"name": "John Renfro", "company": "Capital Group &amp; Disney"}, {"name": "JR Rettig", "company": "Pendo"}, {"name": "Kelly Rew-Porter", "company": "Reformation�"}, {"name": "Alejandro Reyes", "company": "A.Reyes &amp; Associates"}, {"name": "Jamie Rice", "company": "Cloverfields (Hemsley Family Office)"}, {"name": "Stephanie Rich", "company": "Bread & Butter Ventures"}, {"name": "Rustin Richburg", "company": "Current: L.E.K. Consulting / Former:Bark"}, {"name": "Dan Rickert", "company": "Current: Air Space Intelligence / Former: Palantir"}, {"name": "Katie Riester", "company": "Felicis Ventures"}, {"name": "Josh Riff", "company": "Josh Riff"}, {"name": "Kevin Riley", "company": "actAVA AI"}, {"name": "Alison Risley", "company": "Anthem"}, {"name": "Jatnna Rivas", "company": "Justworks"}, {"name": "Stanford Robbin", "company": "Stanford Robbin"}, {"name": "Laura Robblee", "company": "Former: Zuora"}, {"name": "Matt Roberts", "company": "Sequoia"}, {"name": "John Roberts", "company": "John Roberts"}, {"name": "Anna Roberts", "company": "Guardian Life"}, {"name": "Jessie Roberts", "company": "Nextdoor"}, {"name": "Don Robertson", "company": "Former Northwestern Mutual"}, {"name": "Alexi Robichaux", "company": "Alexi Robichaux"}, {"name": "Rana Robillard", "company": "Tekion"}, {"name": "Stephan Roche", "company": "Stephan Roche"}, {"name": "Sean Roddy", "company": "SHRM"}, {"name": "Daniel Rodrigues", "company": "Former: Restaurant Brands International"}, {"name": "PJ Rodriguez", "company": "Oun Homes"}, {"name": "Michael Rogers", "company": "Alight"}, {"name": "Marc Rosenberg", "company": "Kaiser Permanente"}, {"name": "Olivia Rosenthal", "company": "Patch Caregiving"}, {"name": "Michael Ross", "company": "Visa"}, {"name": "Kathy Ross", "company": "Sequoia"}, {"name": "Rich Roth", "company": "CommonSpirit Health"}, {"name": "Franco Ruggeri", "company": "Transform"}, {"name": "Rob Rush", "company": "Rebalance Capital"}, {"name": "Helen Russell", "company": "HubSpot"}, {"name": "Maggie Ruvoldt", "company": "LEARN Behvioral"}, {"name": "Margaret Ruvoldt", "company": "LEARN Behavioral"}, {"name": "Jeff Ryan", "company": "McAfee"}, {"name": "Gaurav Sabharwal", "company": "New Relic"}, {"name": "Samy Ben Said", "company": "TechWolf"}, {"name": "Maya Said", "company": "Outcomes4Me Inc."}, {"name": "Robert Salama", "company": "Sequoia"}, {"name": "Rex Salisbury", "company": "\u0010Cambrian"}, {"name": "Allison Salkeld", "company": "Unum Group"}, {"name": "Brandon Sammut", "company": "Zapier"}, {"name": "JP Sanday", "company": "Menlo Ventures"}, {"name": "Bala Sathyanarayanan", "company": "Greif"}, {"name": "Christina Sawyer", "company": "Adeia"}, {"name": "Marcus Sawyerr", "company": "EQ.app"}, {"name": "Monigo Saygbay-Hallie", "company": "Denny's"}, {"name": "Brian Scharf", "company": "ZFO"}, {"name": "Lee Scheuer", "company": "Lee Scheuer"}, {"name": "Leah Schiro", "company": "ADP"}, {"name": "Fritz Schlereth", "company": "Trace8"}, {"name": "Lars Schmidt", "company": "Amplify Talent"}, {"name": "Amanda Schmidt", "company": ""}, {"name": "Brooke Schmucker", "company": "Guardian"}, {"name": "Jeff Schneble", "company": "Human Interest"}, {"name": "Chad Schneider", "company": "Thatch"}, {"name": "Lily Schoen", "company": "Cigna Ventures"}, {"name": "Matt Schuyler", "company": "Former Chief Brand Officer and CAO"}, {"name": "Judy Schwartz", "company": "Judy Schwartz"}, {"name": "Lindsay Scott", "company": "SCAN"}, {"name": "Christina Seafort", "company": "Monster Energy"}, {"name": "Will Sealy", "company": "Summer"}, {"name": "Dylan Serota", "company": "Terminal"}, {"name": "Lauren Serota", "company": "brand velocity group"}, {"name": "Prasad Setty", "company": "Prasad Setty"}, {"name": "Karishma Shah", "company": "ADP Ventures"}, {"name": "Humera Shahid", "company": "Intuit"}, {"name": "Aditi Shankar", "company": "Multiply Mortgage"}, {"name": "Nick Shapiro", "company": "UPMC Enterprises"}, {"name": "Lee Shapiro", "company": "Lee Shapiro"}, {"name": "Jeremy Shapiro", "company": "Merck"}, {"name": "Sarah Sheehan", "company": "Bravely"}, {"name": "Yusuf Sherwani", "company": "Pelago"}, {"name": "Scott Shibley", "company": "Amazon One Medical"}, {"name": "AJ Shimoga", "company": "Cigna Ventures"}, {"name": "Yaniv Shimoni", "company": "Take2 AI"}, {"name": "Susan Shipp", "company": "Susan Shipp"}, {"name": "Charles Shipp", "company": "Charles Shipp"}, {"name": "Jordan Shlain", "company": "Private Medical"}, {"name": "Yoni Shtein", "company": "Laguna"}, {"name": "Steven Shulman", "company": "Steve Shulman"}, {"name": "Derek Sidebottom", "company": "Verana Health"}, {"name": "Jason Siegert", "company": "Bon Secours Mercy Health"}, {"name": "Mitch Siegler", "company": "Mitch Siegler"}, {"name": "Jeremy Siegler", "company": "Jeremy Siegler"}, {"name": "Mari Sifo", "company": "Host Hotels"}, {"name": "Laura Sims", "company": "CS Family Capital"}, {"name": "Mala Singh", "company": "Electronic Arts"}, {"name": "Palminder Singh", "company": "ServiceNow"}, {"name": "Nirban Singh", "company": "Healthworx (CareFirst)"}, {"name": "Eric Sippel", "company": "Sippel Farb Family Office"}, {"name": "Jennie Siu", "company": "CareDx, Inc."}, {"name": "Edmund Siy", "company": "Bon Secours Mercy Health"}, {"name": "Mendy Slaton", "company": "Horizon3.ai"}, {"name": "Ryan Smith", "company": "Carmel Capital Partners"}, {"name": "Jake Smith", "company": "Cannage Capital"}, {"name": "LeAnn Smith", "company": "McKesson"}, {"name": "Tamika Curry Smith", "company": "Current: ARM / Former: Nike, Mercedez-Benz"}, {"name": "David Snopkowski", "company": "Quadrant Partners"}, {"name": "Bill Snyder", "company": "Cylinder"}, {"name": "David Somers", "company": "Workday"}, {"name": "Jane Somuah", "company": "Guardian Life Insurance"}, {"name": "Jevan Soo", "company": "WRITER"}, {"name": "Andrew Spaventa", "company": "Andrew Spaventa"}, {"name": "Jeff Spector", "company": "Karat"}, {"name": "Nelson Spencer", "company": "Augmented Intelligence"}, {"name": "Alok Srivastava", "company": "Kompass Kapital"}, {"name": "Elise Stage", "company": "ServiceNow"}, {"name": "Travis Steele", "company": "Abo Ventures (Yates Family Office)"}, {"name": "Jordana Stein", "company": "Enrich"}, {"name": "Joe Steinrock", "company": "ADP, Inc."}, {"name": "Charlie Stephens", "company": "Fidelity"}, {"name": "Susanne Stephenson", "company": "Abo Ventures (Yates Family Office)"}, {"name": "Erich Sternberg", "company": "Trustmark (fka Pacific Life)"}, {"name": "Tiffany Stevenson", "company": "WeightWatchers"}, {"name": "Kate Stewart", "company": "Horizon3 ai"}, {"name": "Brodie Stone", "company": "Helm Health"}, {"name": "Ron Storn", "company": "Truckstop"}, {"name": "Bridget Stout", "company": "Acquis Consulting"}, {"name": "Susan Stowell", "company": "Unum"}, {"name": "Randy Street", "company": "WhoAi"}, {"name": "Stefan Strein", "company": "Cleveland Clinic Investment Office"}, {"name": "Elise Strickland", "company": "Quadrant Partners"}, {"name": "Joanna Strober", "company": "Midi Health"}, {"name": "Paul Studer", "company": "Workday Ventures"}, {"name": "Stephen Sullivan", "company": "Sequoia"}, {"name": "Tracey Sullivan", "company": "Tracey Sullivan"}, {"name": "Christina Sullivan", "company": "Sequoia"}, {"name": "Tammy Sun", "company": "Carrot Fertility"}, {"name": "Pawan Suri", "company": "Pawan Suri"}, {"name": "Mara Swan", "company": "Former: ManpowerGroup"}, {"name": "Jessica Swank", "company": "Box"}, {"name": "Conor Sweeney", "company": "Weights & Biases"}, {"name": "Jason Szczuka", "company": "Bon Secours Mercy Health"}, {"name": "Aaron Szekel", "company": "Layout Ventures"}, {"name": "Marie Szuts", "company": "Marie Szuts Coaching and Consulting"}, {"name": "Gayle Tait", "company": "Gayle Tait"}, {"name": "Jon Tait", "company": "Current: Groq / Former Apple"}, {"name": "Shane Takeshita", "company": "Sequoia"}, {"name": "Tara Takeshita", "company": "Tara Takeshita"}, {"name": "Sam Tam", "company": "Microsoft"}, {"name": "Josh Tanenbaum", "company": "Rebalance Capital"}, {"name": "Louise Tanski", "company": "Amera"}, {"name": "Dan Tarpey", "company": "UPMC"}, {"name": "Mary Tavarozzi", "company": ""}, {"name": "Gaurang Telang", "company": "Hokey Pokey"}, {"name": "Robby Templeton", "company": "TrueBridge"}, {"name": "Sharon Thaler", "company": "Sharon Thaler"}, {"name": "Michael Thaler", "company": "Michael Thaler"}, {"name": "Mike Theilman", "company": "Albertsons"}, {"name": "Mike Theilmann", "company": "Selft"}, {"name": "AJ Thomas", "company": "X, the Moonshot Factory"}, {"name": "Amy Thompson", "company": "Current: GAP Inc, Former: Mattel"}, {"name": "Kendall Thurlow", "company": "CGF Holdings"}, {"name": "Kathy Tignor", "company": "Magnitude"}, {"name": "Tracy Ting", "company": "Encore Capital Group"}, {"name": "Bebe Tirfu", "company": "Bebe Tirfu"}, {"name": "Chris Tobin", "company": "Z?m, Former Affirm and Intercom"}, {"name": "Caroline Toch", "company": "Bain Capital (BCV SP Cayman)"}, {"name": "Jeff Torborg", "company": "Mayo Clinic (MN)"}, {"name": "Michelle Tran", "company": "Summer"}, {"name": "Kenneth Trauner", "company": "Kaiser Permanente"}, {"name": "Daniel Trencher", "company": "Teladoc Health (Former)"}, {"name": "Glen Tullman", "company": "Glen Tullman"}, {"name": "Nicholas Turner", "company": "Nicholas Turner"}, {"name": "Nick Tuttle", "company": "Nick Tuttle"}, {"name": "Steve Ueng", "company": "Guardian Life Insurance (GIS Strategic Ventures)"}, {"name": "Loly Vadassery", "company": "Datamatics Business Solutions Ltd"}, {"name": "Lee Valenta", "company": "Cloverfields (Hemsley Family Office)"}, {"name": "Santosh Vallabhaneni", "company": "Rovi Health"}, {"name": "JESSICA VANSCAVISH", "company": "Guardian Life Insurance Company of America"}, {"name": "Amelie Sophie Vavrocsky", "company": "Formally"}, {"name": "Madhavi Vemireddy", "company": "Cleo"}, {"name": "Sugi Venkatesh", "company": "Current:ADP / Former: American Express"}, {"name": "Olivia Verrill", "company": "TechWolf"}, {"name": "Jacob Vigil", "company": "Alder Companies"}, {"name": "Santiago Villeda", "company": "Oun Homes"}, {"name": "Amanda Vinson", "company": "ServiceNow Ventures"}, {"name": "Mike Vishny", "company": "Evolution Hospitality"}, {"name": "Chris Vogt", "company": "Margaret Cargill Foundation"}, {"name": "shweta vohra", "company": "GitHub"}, {"name": "Brian Volk", "company": "Brian Volk"}, {"name": "Normal Volsky", "company": "MVP Growth Partners"}, {"name": "Job van der Voort", "company": "Remote"}, {"name": "Pooja Vyas", "company": "Marquette Associates"}, {"name": "barbara wachsman", "company": "frazier healthcare partners"}, {"name": "Barb Wachsman", "company": "Disney"}, {"name": "Vicki Walia", "company": "Prudential"}, {"name": "Kris Walker", "company": "Unum Group"}, {"name": "Hope Walls", "company": "Nationwide"}, {"name": "Dany Walsh", "company": "Goldman Sachs"}, {"name": "Emily Wanderer", "company": "Sequoia�"}, {"name": "Frank Wang", "company": "actAVA AI"}, {"name": "Shawn Wang", "company": "Gainwell Technologies"}, {"name": "Jeff Wantman", "company": "Workday Ventures"}, {"name": "Cody Ward", "company": "Sequoia"}, {"name": "Brad Warga", "company": "Heidrick &amp; Struggles"}, {"name": "Shelly Warris", "company": "Carmel Capital Partners"}, {"name": "Jason Watson", "company": "Jason and Katie Watson"}, {"name": "Katie Watson", "company": "WD"}, {"name": "Matt Watson", "company": "Origin"}, {"name": "Suzi Webber", "company": "McGrath"}, {"name": "Andrew Weber", "company": "EisnerAmper"}, {"name": "Abby Weber", "company": "Guardian Life"}, {"name": "Aaron Webster", "company": "Cameron Ventures"}, {"name": "Kevin Wechter", "company": "PacVentures"}, {"name": "Brian Weeks", "company": "Brian Weeks"}, {"name": "Bobbi Wegner", "company": "Groops & Harvard"}, {"name": "Don Weinstein", "company": "NAB3 LLC"}, {"name": "Jay Weintraub", "company": "Jay Weintraub"}, {"name": "Anthony Weldon", "company": "Denlow"}, {"name": "Tara Wescott", "company": "McGrath"}, {"name": "Robert Wesley", "company": "Cameron Ventures"}, {"name": "Michael White", "company": "Multiply"}, {"name": "Sarah White", "company": "Independent"}, {"name": "Ian White", "company": "ChartHop"}, {"name": "Morgan Widuch", "company": "Margaret A. Cargill Foundation"}, {"name": "Sion Williams", "company": "Great American Insurance"}, {"name": "J Douglas Williams", "company": "J Douglas Williams"}, {"name": "Selma Williams", "company": "SHRM"}, {"name": "Rich Williams", "company": "Summer"}, {"name": "Laura Wilson", "company": "Advisor�"}, {"name": "Julia Winterson", "company": "CommonSpirit Health"}, {"name": "Ben Wire", "company": "Valeo Ventures"}, {"name": "Shawn Wischmeier", "company": "Margaret A. Cargill Foundation"}, {"name": "Debbie Wissel", "company": "Swing Search"}, {"name": "Eric Wohl", "company": "Former National CineMedia (NCM)"}, {"name": "Paul Wolfe", "company": "Paul Wolfe"}, {"name": "Melinda Wolfe", "company": "Former Global Head of HR, GLG"}, {"name": "MELINDA Wolfe", "company": "Melinda B Wolfe & Associates"}, {"name": "DM Wolfson", "company": "Wolfson (ZWD Investments, LLC)"}, {"name": "James Woloszyn", "company": "Northwestern Mutual"}, {"name": "Shelby Wolpa", "company": "Consultant�"}, {"name": "Antonia Wong", "company": "Samsung Semiconductor"}, {"name": "Phillip Wood", "company": "Intermountain Health"}, {"name": "Arthur Woods", "company": "Arthur Woods"}, {"name": "Mikael Wornoo", "company": "TechWolf"}, {"name": "Xindi Wu", "company": "Xindi Wu"}, {"name": "Caroline Xie", "company": "ICONIQ"}, {"name": "Jessica Droste Yagan", "company": "Impact Engine"}, {"name": "Weiran Yao", "company": "actAVA AI"}, {"name": "Ben Yardeni", "company": "Ben and Rachel Yardeni"}, {"name": "Rachel Yardeni", "company": "Ben and Rachel Yardeni"}, {"name": "Jay Yarid", "company": "Midi Health"}, {"name": "Jaez Yeager", "company": "Sequoia"}, {"name": "Justin Young", "company": "Unum"}, {"name": "Lisa Zamosky", "company": "Zamosky Communications"}, {"name": "Robin Zander", "company": "Zander Media"}, {"name": "Alejandro Zelaya", "company": "Alejandro Zelaya"}, {"name": "Leo Zhang", "company": "Aon"}, {"name": "Jeremy Zhang", "company": "Finch"}, {"name": "Zach Zhang", "company": "Clasp"}, {"name": "Shelley Zhuang", "company": "Cannage Capital"}, {"name": "Kaitlin Zidar", "company": "Thatch"}];
+
+let entries = JSON.parse(localStorage.getItem('transform2026') || '[]');
+let currentMember = localStorage.getItem('transform2026_member') || '';
+let acFocusIdx = -1;
+let acMatches = [];
+
+const DAYS = {
+  '2026-03-23': 'Monday, March 23',
+  '2026-03-24': 'Tuesday, March 24',
+  '2026-03-25': 'Wednesday, March 25',
+};
+
+function getToday() {
+  const key = new Date().toISOString().slice(0,10);
+  return DAYS[key] || new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+}
+
+function init() {
+  if (currentMember) document.getElementById('svMember').value = currentMember;
+  renderEntries();
+}
+
+function saveMember() {
+  currentMember = document.getElementById('svMember').value;
+  localStorage.setItem('transform2026_member', currentMember);
+}
+
+// AUTOCOMPLETE
+function autocomplete(query) {
+  const list = document.getElementById('acList');
+  acFocusIdx = -1;
+  if (!query || query.length < 2) { list.classList.remove('open'); return; }
+  const q = query.toLowerCase();
+  acMatches = GUESTS.filter(g =>
+    g.name.toLowerCase().includes(q) || g.company.toLowerCase().includes(q)
+  ).slice(0, 8);
+  if (!acMatches.length) { list.classList.remove('open'); return; }
+  list.innerHTML = acMatches.map((g, i) => {
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const hl = (str) => {
+      try {
+        return str.replace(new RegExp(`(${escaped})`, 'gi'), '<span class="autocomplete-highlight">$1</span>');
+      } catch(e) { return str; }
+    };
+    return `<div class="autocomplete-item" data-idx="${i}" onmousedown="selectGuest(${i})">
+      <div class="autocomplete-name">${hl(g.name)}</div>
+      <div class="autocomplete-company">${hl(g.company)}</div>
+    </div>`;
+  }).join('');
+  list.classList.add('open');
+}
+
+function selectGuest(idx) {
+  const g = acMatches[idx];
+  if (!g) return;
+  document.getElementById('extName').value = g.name;
+  document.getElementById('extCompany').value = g.company;
+  document.getElementById('acList').classList.remove('open');
+  document.getElementById('notes').focus();
+}
+
+function acKeydown(e) {
+  const list = document.getElementById('acList');
+  const items = list.querySelectorAll('.autocomplete-item');
+  if (!list.classList.contains('open')) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); acFocusIdx = Math.min(acFocusIdx+1, items.length-1); updateAcFocus(items); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); acFocusIdx = Math.max(acFocusIdx-1, 0); updateAcFocus(items); }
+  else if (e.key === 'Enter' && acFocusIdx >= 0) { e.preventDefault(); selectGuest(acFocusIdx); }
+  else if (e.key === 'Escape') { list.classList.remove('open'); }
+}
+
+function updateAcFocus(items) {
+  items.forEach((el, i) => el.classList.toggle('focused', i === acFocusIdx));
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.autocomplete-wrap')) {
+    document.getElementById('acList').classList.remove('open');
+  }
+});
+
+// CHIPS
+function toggleChip(el, group) {
+  if (group === 'event') {
+    const already = el.classList.contains('selected');
+    document.getElementById('eventChips').querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+    if (!already) el.classList.add('selected');
+  } else {
+    el.classList.toggle('selected');
+    if (el.textContent.includes('No action')) {
+      document.getElementById('actionChips').querySelectorAll('.chip').forEach(c => {
+        if (!c.textContent.includes('No action')) c.classList.remove('selected');
+      });
+    } else {
+      document.getElementById('actionChips').querySelectorAll('.chip').forEach(c => {
+        if (c.textContent.includes('No action')) c.classList.remove('selected');
+      });
+    }
+  }
+}
+
+function getSelectedChips(id) {
+  return Array.from(document.getElementById(id).querySelectorAll('.chip.selected'))
+    .map(c => c.textContent.trim()).join(', ');
+}
+
+const AIRTABLE_TOKEN = 'patwo3JXgGMPeNWjh.b6c0e9afc71bbdc33a5aa6f54a3c4c9691019f3ad93abffd3e708d9eaee29041';
+const AIRTABLE_BASE = 'apprA2DsmcOyrQiWx';
+const AIRTABLE_TABLE = 'Connections';
+
+async function postToAirtable(entry) {
+  try {
+    await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE}/${encodeURIComponent(AIRTABLE_TABLE)}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        fields: {
+          'Date': entry.date,
+          'Where Met': entry.event || '',
+          'SV Team Member': entry.svMember || '',
+          'External Name': entry.extName || '',
+          'Their Company': entry.extCompany || '',
+          'Action Tags': entry.actions || '',
+          'Notes / Next Steps': entry.notes || '',
+          'Logged At': entry.timestamp
+        }
+      })
+    });
+  } catch(e) {
+    console.warn('Airtable sync failed, saved locally:', e);
+  }
+}
+
+async function logEntry() {
+  const member = document.getElementById('svMember').value;
+  const name = document.getElementById('extName').value.trim();
+  const company = document.getElementById('extCompany').value.trim();
+  const event = getSelectedChips('eventChips');
+  const actions = getSelectedChips('actionChips');
+  const notes = document.getElementById('notes').value.trim();
+
+  if (!member) { alert('Please select your name at the top first.'); return; }
+  if (!name) { document.getElementById('extName').focus(); return; }
+
+  const btn = document.querySelector('.submit-btn');
+  btn.textContent = 'Saving…';
+  btn.disabled = true;
+
+  const entry = { id: Date.now(), timestamp: new Date().toISOString(), date: getToday(), event, svMember: member, extName: name, extCompany: company, actions, notes };
+  
+  // Save locally first (instant, no data loss if network fails)
+  entries.unshift(entry);
+  localStorage.setItem('transform2026', JSON.stringify(entries));
+
+  // Then post to Airtable silently
+  await postToAirtable(entry);
+
+  btn.textContent = 'Log Connection';
+  btn.disabled = false;
+
+  document.getElementById('extName').value = '';
+  document.getElementById('extCompany').value = '';
+  document.getElementById('notes').value = '';
+  document.getElementById('eventChips').querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+  document.getElementById('actionChips').querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+  document.getElementById('acList').classList.remove('open');
+  document.getElementById('extName').focus();
+
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+  renderEntries();
+}
+
+function deleteEntry(id) {
+  entries = entries.filter(e => e.id !== id);
+  localStorage.setItem('transform2026', JSON.stringify(entries));
+  renderEntries();
+}
+
+function renderEntries() {
+  document.getElementById('totalCount').textContent = entries.length;
+  const el = document.getElementById('entryList');
+  if (!entries.length) { el.innerHTML = '<div class="empty-log"><div class="empty-icon">📋</div>No connections logged yet.</div>'; return; }
+  el.innerHTML = entries.map(e => `
+    <div class="entry-card">
+      <button class="delete-btn" onclick="deleteEntry(${e.id})">✕</button>
+      <div class="entry-name">${e.extName || '—'}</div>
+      <div class="entry-company">${e.extCompany || ''}</div>
+      <div class="entry-meta">${e.svMember} · ${e.event || 'No event specified'} · ${e.date}</div>
+      ${e.actions ? `<div style="margin-top:5px;">${e.actions.split(', ').map(a=>`<span class="entry-tag">${a}</span>`).join('')}</div>` : ''}
+      ${e.notes ? `<div class="entry-notes">${e.notes}</div>` : ''}
+    </div>`).join('');
+}
+
+function showView(view) {
+  document.getElementById('log-view').style.display = view==='log-view' ? 'block' : 'none';
+  document.getElementById('list-view').style.display = view==='list-view' ? 'block' : 'none';
+  document.getElementById('btnLog').classList.toggle('active-view', view==='log-view');
+  document.getElementById('btnList').classList.toggle('active-view', view==='list-view');
+  if (view==='list-view') renderEntries();
+}
+
+function exportCSV() {
+  if (!entries.length) { alert('No entries to export yet.'); return; }
+  const headers = ['Date','Where Met','SV Team Member','External Name','Their Company','Action Tags','Notes/Next Steps'];
+  const rows = entries.map(e => [e.date,e.event,e.svMember,e.extName,e.extCompany,e.actions,e.notes].map(v=>`"${(v||'').replace(/"/g,'""')}"`));
+  const csv = [headers.join(','),...rows.map(r=>r.join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'Transform2026_Connections.csv';
+  a.click();
+}
+
+init();
+</script>
+</body>
+</html>
